@@ -4,7 +4,7 @@ import hashlib
 import os
 import logging
 from datetime import datetime
-
+import time
 
 ## Inicialización variables
 
@@ -44,14 +44,22 @@ def TCP_Hash():
     port = 3000
 
     s.connect((host, port))
+    print('Conexión exitosa')
     hash = s.recv(BUFFER_SIZE).decode()
+    print(hash_file(nombre_Archivo))
+    print(hash_file(nombre_Archivo)==hash)
     if hash_file(nombre_Archivo)==hash:
-        s.send('1'.encode())
+        mensaje='1-'+str(datos_iniciales[0])
+        s.send(mensaje.encode())
         logging.info('Hash correcto')
+    else:
+        mensaje = '0-' + str(datos_iniciales[0])
+        s.send(mensaje.encode())
+        logging.info('Hash incorrecto')
     s.close()
 ## Estado actual del cliente
 var = input('¿Esta el cliente listo para recibir(Opciones 0(No),1(Si)')
-if var == "Si" or var == "1":
+if var != "Si" or var != "1":
     ClientSocket.sendto("1".encode(), server_address)
 else:
     exit()
@@ -88,7 +96,6 @@ with open(nombre_Archivo, "wb") as f:
                 f.close()
                 break
             numPaquetesRecibidos += 1
-            print(numPaquetesRecibidos)
             numBytesRecibidos += len(data)
             f.write(data)  # write to the file the bytes we just received
     except:
@@ -104,5 +111,6 @@ logging.info('Tiempo recepción de archivo  :' + str(tiempoTotal) + ' microsegun
 logging.info('Numero Paquetes Recibidos: '+str(numPaquetesRecibidos))
 logging.info('Numero Bytes Recibidos: '+str(numBytesRecibidos/8))
 print('Cerrrando socket...\n')
+time.sleep(5)
 TCP_Hash()
 

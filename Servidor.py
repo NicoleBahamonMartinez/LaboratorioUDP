@@ -76,24 +76,11 @@ except socket.error as e:
     print(str(e))
 
 
-## Función para enviar hash a cliente del respectivo archivo por TCP
-def enviar_hash(i):
-    s = socket.socket()
-    s.bind((host, puerto_TCP))
-    s.listen(5)
-    message = hash_file(Archivo)
-    client_socket, address = s.accept()
-    client_socket.send(message.encode())
-    data=ServerSocket.recv(BUFFER_SIZE)
-    if data.decode():
-        logging.info('Transferencia exitosa a cliente '+str(i))
-    else:
-        logging.info('Transferencia no exitosa a cliente '+str(i))
+
 
 ## Función de envío archivo al cliente
 def threaded_client(connection, i):
     global enviados
-    print('Entro aca')
     while not event.isSet():
         event.wait(1)
     logging.info('Conexión realizada por el cliente  número'+str(i)+'con un socket que tiene la siguiente dirección'+str(connection))
@@ -123,10 +110,9 @@ def threaded_client(connection, i):
     logging.info('Tiempo envio de archivo a cliente ' + str(i) + ':' + str(tiempo_Envio) + ' microsegundos')
     logging.info('Cantidad de bytes enviados'+str(numBytesEnviados/8))
     logging.info('Cantidad de paquetes enviados'+str(numPaquetesEnviados))
-    time.sleep(5)
-    enviar_hash(i)
     enviados += 1
-    connection.close()
+    print(enviados)
+
 # Conexion activa a clientes e inicio de funciones
 while True:
     if ThreadCount<NumeroConexiones:
@@ -144,8 +130,35 @@ while True:
     if ThreadCount == NumeroConexiones:
         event.set()
     if enviados==NumeroConexiones:
+        print('Se cierran conexiones')
+        ServerSocket.close()
+        break
+ThreadCount = 0
+print('intentando TCP')
+s = socket.socket()
+s.bind((host, puerto_TCP))
+s.listen(5)
+message = hash_file(Archivo)
+print('Calculo hash')
+print(message)
+while True:
+    if ThreadCount < NumeroConexiones:
+        client, address = s.accept()
+        ThreadCount += 1
+        client.send(message.encode())
+        data = client.recv(BUFFER_SIZE)
+        data=data.decode()
+        data=data.split('-')
+        if str(data[0])==str(1):
+            logging.info('Transferencia exitosa a cliente ' + str(data[1]))
+            client.close()
+        else:
+            logging.info('Transferencia no exitosa a cliente ' + str(data[1]))
+            client.close()
+    if ThreadCount == NumeroConexiones:
+        s.close()
         break
 
-ServerSocket.close()
+
 
 
